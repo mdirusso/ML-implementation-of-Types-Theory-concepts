@@ -5,7 +5,7 @@ module Term =
 
 	struct
 	
-		type info
+		type info = int
 		
 		type term =
 			| TmVar of info * int * int       		(* int1 : de Brujin index     int2: actual size of the context *)
@@ -45,7 +45,7 @@ module Term =
 	(* Returns true if a name is already in the context, false otw *)
 	let rec alreadyused ctx x =
 		match ctx with
-		| nil -> false
+		| [] -> false
 		| (name, _) :: l1 ->
 			if name = x then true
 			else alreadyused l1 x
@@ -62,9 +62,11 @@ module Term =
 				
 			
 	let rec index2name fi ctx x =
-		match List.nth ctx x with	
-		| nil -> "[not found]"                     	(*  *)	
-		| (name, _) -> name
+		try
+			let (name, _) = List.nth ctx x in
+			name
+		with Failure _ -> "[not found]"
+			
 
 		
 	let rec printtm ctx t = 
@@ -76,6 +78,17 @@ module Term =
 						Format.printf "%s" (index2name fi ctx x)
 						else
 						Format.printf "[bad index]"
+						
+						
+	let termShift d t =
+		let rec walk c t = 
+			match t with
+			| TmVar(fi, x, n) -> if x >= c 
+							then TmVar(fi, x + d, n + d)
+							else TmVar(fi, x, n + d)
+			| TmAbs(fi, x, t1) -> TmAbs(fi, x, walk (c + 1) t1)
+			| TmApp(fi, t1, t2) -> TmApp(fi, walk c t1, walk c t2)
+		in walk 0 t
 
 
 end;;
