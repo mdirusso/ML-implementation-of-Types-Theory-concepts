@@ -51,44 +51,86 @@ module Term =
 		| TmIsZero (t1) -> let t1' = eval1 t1 in TmIsZero(t1')								(*E_iszero*)	
 		| _ -> raise NoRuleApplies
 		
-	
+	let print t = 
+		(match t with 
+		| TmIf (TmTrue,t2,t3) -> Format.printf " E_iftrue \n"                                      
+		| TmIf (TmFalse,t2,t3) -> 	Format.printf " E_iffalse \n " 										
+		| TmIf (t1,t2,t3) -> Format.printf " E_if \n" 											
+		| TmSucc (t1) ->  Format.printf " E_succ \n "                     							
+		| TmPred (TmZero) -> Format.printf " E_predzero \n " 								    
+		| TmPred (TmSucc(nv1)) when (isnumericval nv1) ->	Format.printf " E_predsucc \n" 			
+		| TmPred (t1) -> Format.printf " E_pred \n" 							                    
+		| TmIsZero (TmZero) -> Format.printf " E_iszerozero \n" 								
+		| TmIsZero (TmSucc(nv1)) when (isnumericval nv1) -> Format.printf " E_iszerosucc \n"  	
+		| TmIsZero (t1) -> Format.printf " E_iszero \n"
+        | _ -> raise NoRuleApplies		
+         )  
+
 	(* Multi-step evaluation *)
-	let rec eval t =
-		try let t' = eval1 t in eval t'
+	let rec eval t = 
+		try let t' = Format.printf "the one step rule applied is: "; print t; eval1 t in eval t'
 		with NoRuleApplies -> t
 		
+		
+	
+	
+	
 
 	(*cap 3 pagina 43*) 
 	(* Big-step evaluation *)
 	let rec bigstep t =
 		match t with 
-		| TmFalse | TmTrue | TmZero -> t		           					(*B_Value*)
+		| TmFalse | TmTrue | TmZero -> t	           					 (*B_Value*)
 		| TmIf(t1,t2,t3) -> let t1' = bigstep t1 in       
 					(match t1' with
-					| TmTrue -> let v2 = bigstep t2 in   		 			(*B_IfTrue*)
+					| TmTrue -> let v2 = bigstep t2 in   		 			 (*B_IfTrue*)
 					v2
-					| TmFalse -> let v3 = bigstep t3 in	 				(*B_IfFalse*)
+					| TmFalse -> let v3 = bigstep t3 in	 				     (*B_IfFalse*)
 					v3
 					| _ -> raise NoRuleApplies
 					)
-		| TmSucc(t1) -> let nv1 = bigstep t1 in								(*B_Succ*)
+		| TmSucc(t1) -> let nv1 = bigstep t1 in								 (*B_Succ*)
 					if isnumericval nv1 
 					then TmSucc(nv1)
 					else raise NoRuleApplies
 		| TmPred(t1) -> let t1' = bigstep t1 in 
 					(match t1' with 
-					| TmZero -> t1'									(*B_PredZero*)
-					| TmSucc(nv1) when (isnumericval nv1) -> nv1				(*B_PredSucc*)
+					| TmZero -> t1'									         (*B_PredZero*)
+					| TmSucc(nv1) when (isnumericval nv1) -> nv1		     (*B_PredSucc*)
 					| _ -> raise NoRuleApplies
 					)
 		| TmIsZero(t1) -> let t1' = bigstep t1 in 
 					(match t1' with 
-					| TmZero -> TmTrue									(*B_IsZeroZero*)
-					| TmSucc(nv1) when (isnumericval nv1) -> TmFalse			(*B_IsZeroSucc*)
+					| TmZero -> TmTrue									     (*B_IsZeroZero*)
+					| TmSucc(nv1) when (isnumericval nv1) -> TmFalse		 (*B_IsZeroSucc*)
 					| _ -> raise NoRuleApplies
 					)
-			
+	
 
+	
+    let printBig t = match t with
+		| TmFalse | TmTrue | TmZero -> 	Format.printf " B_Value \n"           					
+		| TmIf(t1,t2,t3) -> let t1' = bigstep t1 in       
+					(match t1' with
+					| TmTrue -> Format.printf " B_IfTrue \n" 		 			 
+					
+					| TmFalse -> Format.printf "B_IfFalse* \n" 				     
+					
+					| _ -> raise NoRuleApplies
+					)
+		| TmSucc(t1) -> Format.printf "B_Succ \n" 
+		| TmPred(t1) -> let t1' = bigstep t1 in 
+					(match t1' with 
+					| TmZero -> Format.printf "B_PredZero \n" 									         
+					| TmSucc(nv1) when (isnumericval nv1) -> Format.printf "B_PredSucc \n" 		     
+					| _ -> raise NoRuleApplies
+					)
+		| TmIsZero(t1) -> let t1' = bigstep t1 in 
+					(match t1' with 
+					| TmZero -> Format.printf "B_IsZeroZero \n" 								  
+					| TmSucc(nv1) when (isnumericval nv1) -> Format.printf "B_IsZeroSucc \n" 				
+					| _ -> raise NoRuleApplies
+					)
 		
 
 	
@@ -107,23 +149,13 @@ module Term =
 	
 	
 	(* Function that prints a term *)
-	let printt t =
-		Format.printf (to_string t)
+	(*let printt t =
+		Format.printf (to_string t)*)
 
 
+    let multiBigstep t = Format.printf "the insert term is %S \n " (to_string t); bigstep t; Format.printf "the big step rule applied is: "; 
+	printBig t;Format.printf "\n " ; eval t
 
-let print t = 
-		match t with 
-		| TmIf (_,TmTrue(_),t2,t3) -> Format.printf "E_iftrue"                                      
-		| TmIf (_,TmFalse(_),t2,t3) -> 	Format.printf "E_iffalse" 										
-		| TmIf (fi,t1,t2,t3) -> Format.printf "E_if" 											
-		| TmSucc (fi,t1) ->  Format.printf "E_succ"                     							
-		| TmPred (_,TmZero(dummyinfo)) -> Format.printf "E_predzero" 								    
-		| TmPred (_,TmSucc(_,nv1)) when (isnumericval nv1) ->	Format.printf "E_predsucc" 			
-		| TmPred (fi,t1) -> Format.printf "E_pred" 							                    
-		| TmIsZero (_,TmZero(dummyinfo)) -> Format.printf "E_iszerozero" 								
-		| TmIsZero (_,TmSucc(dummyinfo,nv1)) when (isnumericval nv1) -> Format.printf "E_iszerosucc"  	
-		| TmIsZero (fi,t1) -> Format.printf "E_iszero" 
 
 
 	
