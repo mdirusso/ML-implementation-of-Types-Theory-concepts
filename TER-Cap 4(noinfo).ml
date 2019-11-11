@@ -112,7 +112,18 @@ module Term =
 
 
 
-
+let print t = 
+		match t with 
+		| TmIf (_,TmTrue(_),t2,t3) -> Format.printf "E_iftrue"                                      
+		| TmIf (_,TmFalse(_),t2,t3) -> 	Format.printf "E_iffalse" 										
+		| TmIf (fi,t1,t2,t3) -> Format.printf "E_if" 											
+		| TmSucc (fi,t1) ->  Format.printf "E_succ"                     							
+		| TmPred (_,TmZero(dummyinfo)) -> Format.printf "E_predzero" 								    
+		| TmPred (_,TmSucc(_,nv1)) when (isnumericval nv1) ->	Format.printf "E_predsucc" 			
+		| TmPred (fi,t1) -> Format.printf "E_pred" 							                    
+		| TmIsZero (_,TmZero(dummyinfo)) -> Format.printf "E_iszerozero" 								
+		| TmIsZero (_,TmSucc(dummyinfo,nv1)) when (isnumericval nv1) -> Format.printf "E_iszerosucc"  	
+		| TmIsZero (fi,t1) -> Format.printf "E_iszero" 
 
 
 	
