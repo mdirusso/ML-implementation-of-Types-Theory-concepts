@@ -5,28 +5,29 @@ module Term =
 
 	struct
 	
-		exception NoRuleApplies
+		exception NoRuleApplies							(* Defining the NoRuleApplies exception. *)
 
-		type term = 
-			| TmTrue   
-			| TmFalse   
-			| TmIf     of term * term * term 
-			| TmZero    
-			| TmSucc   of term 
-			| TmPred   of term 
-			| TmIsZero of term
+		type term = 									(* Defining the term set, which contains all the possible terms*)
+			| TmTrue   								(* Constant true *)
+			| TmFalse   								(* Constant false *)
+			| TmIf     of term * term * term 				(* Conditional *)
+			| TmZero    								(* Constant zero *)
+			| TmSucc   of term 							(* Successor *)
+			| TmPred   of term 							(* Predecessor *)
+			| TmIsZero of term							(* Zero test *)
 			
 			
 			
 
-	let rec isnumericval t =
+	(* Checks whether the term as argument is a numeric value or not *)
+	let rec isnumericval t =								
 		match t with 
 		| TmZero -> true 
 		| TmSucc(t1) -> isnumericval t1 
 		| _ -> false
 
 
-		
+	(* Checks whether the term as argument is a value (boolean or numeric value) or not *)	
 	let rec isval t = 
 		match t with 
 		| TmTrue -> true
@@ -35,7 +36,7 @@ module Term =
 		| _ -> false
 
 
-
+	(* Single step evaluation *)
 	let rec eval1 t = 
 		match t with
 		| TmIf(TmTrue , t2, t3) -> t2                                             				(*E_iftrue*)
@@ -48,11 +49,17 @@ module Term =
 		| TmIsZero (TmZero) -> TmTrue 												(*E_iszerozero*)
 		| TmIsZero (TmSucc(nv1)) when (isnumericval nv1) -> TmFalse					 		(*E_iszerosucc*)
 		| TmIsZero (t1) -> let t1' = eval1 t1 in TmIsZero(t1')								(*E_iszero*)	
-		| _ -> raise NoRuleApplies 
+		| _ -> raise NoRuleApplies
 		
-	(* simulare più small step per ottenere risulatato di bigstep*)
+	
+	(* Multi-step evaluation *)
+	let rec eval t =
+		try let t' = eval1 t in eval t'
+		with NoRuleApplies -> t
+		
 
 	(*cap 3 pagina 43*) 
+	(* Big-step evaluation *)
 	let rec bigstep t =
 		match t with 
 		| TmFalse | TmTrue | TmZero -> t		           					(*B_Value*)
@@ -82,13 +89,10 @@ module Term =
 					)
 			
 
-			
-	let rec eval t =
-		try let t' = eval1 t in eval t'
-		with NoRuleApplies -> t
+		
 
 	
-	
+	(* Function that returns a string representation of a term *)
 	let rec to_string t =
 		match t with 
 		| TmTrue -> "True"
@@ -98,10 +102,17 @@ module Term =
 		| TmSucc(nv) -> "Succ(" ^ to_string nv ^ ")"
 		| TmPred(nv) -> "Pred(" ^ to_string nv ^ ")"
 		| TmIsZero(nv) -> "IsZero(" ^ to_string nv ^ ")"
+	
+	
+	
+	
+	(* Function that prints a term *)
+	let printt t =
+		Format.printf (to_string t)
 
 
 
-	(* CAP 6 *)
+
 
 
 	
