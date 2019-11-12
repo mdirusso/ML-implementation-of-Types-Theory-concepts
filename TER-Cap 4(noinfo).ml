@@ -116,7 +116,7 @@ module Term =
 					
 					| TmFalse -> Format.printf "B_IfFalse* \n" 				     
 					
-					| _ -> raise NoRuleApplies
+					| _ -> raise NoRuleApplies 
 					)
 		| TmSucc(t1) -> Format.printf "B_Succ \n" 
 		| TmPred(t1) -> let t1' = bigstep t1 in 
@@ -153,8 +153,21 @@ module Term =
 		Format.printf (to_string t)*)
 
 
-    let multiBigstep t = Format.printf "the insert term is %S \n " (to_string t); bigstep t; Format.printf "the big step rule applied is: "; 
-	printBig t;Format.printf "\n " ; eval t
+    let eval_Bigstep t = 
+		Format.printf "* THE BIG STEP EVALUATION IS: \n\n ";
+		bigstep t; 
+		Format.printf "the big step rule applied is: "; 
+	    printBig t;
+	    Format.printf "\n "
+
+
+    let multi_vs_Bigstep t = 
+	    Format.printf "----------------------------------------------\n";
+		Format.printf "THE INSERT TERM IS:\n%S\n " (to_string t); 
+		Format.printf "---------------------------------------------\n\n";
+		eval_Bigstep t;
+		Format.printf "* THE MULTI STEP EVALUATION IS : \n\n ";
+		eval t
 
 
 

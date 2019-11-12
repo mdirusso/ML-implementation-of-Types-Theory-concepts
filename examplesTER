@@ -1,0 +1,7 @@
+(*Example*)
+
+(*Multi Step vs Big Step evaluation*)
+
+#use "TER-Cap 4(noinfo).ml";;
+let t = Term.TmIf (Term.TmTrue, Term.TmIsZero (Term.TmSucc (Term.TmZero)), Term.TmTrue);;
+Term.multi_vs_Bigstep t;;
