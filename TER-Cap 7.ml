@@ -55,7 +55,7 @@ module Term =
 	(* adds a name to the context, creating new name if already used *)
 	let rec pickfreshname ctx x =
 		if alreadyused ctx x 
-		then pickfreshname ctx (x ^ "'") 			(* add a apex to the name if it was already used *)
+		then pickfreshname ctx (x ^ "'") 			(* add an apex to the name if it was already used *)
 		else ((x, NameBind)::ctx), x				(* if the name is not already used, add it to ctx *)
 		
 		
@@ -86,6 +86,18 @@ module Term =
 			| TmVar(fi, x, n) -> if x >= c 
 							then TmVar(fi, x + d, n + d)
 							else TmVar(fi, x, n + d)
+			| TmAbs(fi, x, t1) -> TmAbs(fi, x, walk (c + 1) t1)
+			| TmApp(fi, t1, t2) -> TmApp(fi, walk c t1, walk c t2)
+		in walk 0 t
+		
+	
+	
+	let termSubst j s t =
+		let rec walk c t = 
+			match t with
+			| TmVar(fi, x, n) -> if x = j + c 
+							then termShift c s 
+							else TmVar(fi, x, n)
 			| TmAbs(fi, x, t1) -> TmAbs(fi, x, walk (c + 1) t1)
 			| TmApp(fi, t1, t2) -> TmApp(fi, walk c t1, walk c t2)
 		in walk 0 t
