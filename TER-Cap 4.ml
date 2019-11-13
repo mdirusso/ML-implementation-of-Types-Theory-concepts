@@ -1,6 +1,6 @@
 (*An ML Implementation of Arithmetic Expressions*)
 
-module Project = 
+module Term = 
 
 
 	struct
