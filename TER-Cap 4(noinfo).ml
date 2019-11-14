@@ -52,19 +52,19 @@ module Term =
 		| _ -> raise (NoRuleApplies "")												
 	
 	(* Same behaviour as eval1 but prints the rule applied *)
-	let printEvalStep t = 
+	let rec printEvalStep t = 
 		(match t with 
 		| TmIf (TmTrue,t2,t3) -> Format.printf " E_iftrue \n"; t2                                   
 		| TmIf (TmFalse,t2,t3) -> Format.printf " E_iffalse \n"; t3						
-		| TmIf (t1,t2,t3) -> Format.printf " E_if \n"; let t1' = printEvalStep t1 in TmIf(t1', t2, t3)										
+		| TmIf (t1,t2,t3) -> Format.printf " E_if \n"; let t1' = printEvalStep t1 in TmIf(t1', t2, t3)					
 		| TmSucc (t1) ->  Format.printf " E_succ \n"; let t1' = printEvalStep t1 in TmSucc (t1')                       							
 		| TmPred (TmZero) -> Format.printf " E_predzero \n "; TmZero 								    
 		| TmPred (TmSucc(nv1)) when (isnumericval nv1) ->	Format.printf " E_predsucc \n"; nv1		
 		| TmPred (t1) -> Format.printf " E_pred \n"; let t1' = printEvalStep t1 in TmPred(t1')							                    
-		| TmIsZero (TmZero) -> Format.printf " E_iszerozero \n"; TmTrue						
+		| TmIsZero (TmZero) -> Format.printf " E_iszerozero \n"; TmTrue		
 		| TmIsZero (TmSucc(nv1)) when (isnumericval nv1) -> Format.printf " E_iszerosucc \n"; TmFalse  	
 		| TmIsZero (t1) -> Format.printf " E_iszero \n"; let t1' = printEvalStep t1 in TmIsZero(t1')	
-		| _ -> Format.printf ""		
+		| _ -> raise (NoRuleApplies "")		
          )  
 
 
