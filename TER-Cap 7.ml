@@ -60,7 +60,8 @@ module Term =
 		
 		
 				
-			
+	
+	(*  *)
 	let rec index2name fi ctx x =
 		try
 			let (name, _) = List.nth ctx x in
@@ -68,39 +69,51 @@ module Term =
 		with Failure _ -> "[not found]"
 			
 
-		
+	
+	(* Given a context and a term, prints the term giving new names if they already exist in context *)
 	let rec printtm ctx t = 
 		match t with
-		| TmAbs(fi,x,t1) -> let (ctx',x') = pickfreshname ctx x in
-			Format.printf "(lambda "; Format.printf "%s" (x'); Format.printf ". "; printtm ctx' t1; Format.printf ")"
+		| TmAbs(fi,x,t1) -> let (ctx',x') = pickfreshname ctx x in		(* A new name is chosen for x if it already exists *)
+						Format.printf "(lambda "; Format.printf "%s" (x'); Format.printf ". "; printtm ctx' t1; Format.printf ")"
 		| TmApp(fi, t1, t2) -> Format.printf "("; printtm ctx t1; Format.printf " "; printtm ctx t2; Format.printf ")"
-		| TmVar(fi,x,n) -> if ctxlength ctx = n then
-						Format.printf "%s" (index2name fi ctx x)
+		| TmVar(fi,x,n) -> if ctxlength ctx = n then					(* Consistency check. If it doesn't pass a shift is missing somewhere *)
+						Format.printf "%s" (index2name fi ctx x)	(* return the name corresponding to the index in ctx *)
 						else
 						Format.printf "[bad index]"
 						
-						
+	
+	
+	
+	(* Defines shifting operation *)
+	(* 6.2.1 pag 79 *)	
 	let termShift d t =
 		let rec walk c t = 
 			match t with
-			| TmVar(fi, x, n) -> if x >= c 
+			| TmVar(fi, x, n) -> if x >= c 						(* The index has to be shifted only if it is greater than the cutoff *)
 							then TmVar(fi, x + d, n + d)
 							else TmVar(fi, x, n + d)
-			| TmAbs(fi, x, t1) -> TmAbs(fi, x, walk (c + 1) t1)
-			| TmApp(fi, t1, t2) -> TmApp(fi, walk c t1, walk c t2)
-		in walk 0 t
+			| TmAbs(fi, x, t1) -> TmAbs(fi, x, walk (c + 1) t1)		(* Every time a bound is encountered, the cutoff increases by one and walk is called on the subterm *)
+			| TmApp(fi, t1, t2) -> TmApp(fi, walk c t1, walk c t2)		(* In applications the shifting is applied on both subterms *)
+		in walk 0 t											(* the first call is walk on the original term with cutoff = 0 *)
 		
 	
 	
-	let termSubst j s t =
+	(* Defines substitution operation. *)
+	(* 6.2.4 pag 80 *)
+	let termSubst j s t =  (* [j -> s]t *)
 		let rec walk c t = 
 			match t with
-			| TmVar(fi, x, n) -> if x = j + c 
-							then termShift c s 
-							else TmVar(fi, x, n)
-			| TmAbs(fi, x, t1) -> TmAbs(fi, x, walk (c + 1) t1)
-			| TmApp(fi, t1, t2) -> TmApp(fi, walk c t1, walk c t2)
+			| TmVar(fi, x, n) -> if x = j + c   					(* if x is exactly j plus the cutoff *)
+							then termShift c s      				(* all the j in t are substituted with s *)
+							else TmVar(fi, x, n)				(* nothing happens *)
+			| TmAbs(fi, x, t1) -> TmAbs(fi, x, walk (c + 1) t1)		(* call the walk function increasing the cutoff *)
+			| TmApp(fi, t1, t2) -> TmApp(fi, walk c t1, walk c t2)		(* call the walk on the two subterms *)
 		in walk 0 t
 
+	
+	let termSubstTop s t =
+		termShift (-1) (termSubst 0 (termShift 1 s) t)				(* the term being substituted for the bound variable is first shifted up by one, 
+															then the substitution is made, and then the resulting term is shifted down because
+															a bound variable has been used *)
 
 end;;
