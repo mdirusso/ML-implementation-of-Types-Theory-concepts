@@ -50,19 +50,20 @@ module Term =
 		| TmIsZero (TmSucc(nv1)) when (isnumericval nv1) -> TmFalse					 		(*E_iszerosucc*)
 		| TmIsZero (t1) -> let t1' = eval1 t1 in TmIsZero(t1')								(*E_iszero*)	
 		| _ -> raise (NoRuleApplies "")												
-		
+	
+	(* Same behaviour as eval1 but prints the rule applied *)
 	let printEvalStep t = 
 		(match t with 
-		| TmIf (TmTrue,t2,t3) -> Format.printf " E_iftrue \n"                                      
-		| TmIf (TmFalse,t2,t3) -> 	Format.printf " E_iffalse \n" 										
-		| TmIf (t1,t2,t3) -> Format.printf " E_if \n" 											
-		| TmSucc (t1) ->  Format.printf " E_succ \n"                     							
-		| TmPred (TmZero) -> Format.printf " E_predzero \n " 								    
-		| TmPred (TmSucc(nv1)) when (isnumericval nv1) ->	Format.printf " E_predsucc \n" 			
-		| TmPred (t1) -> Format.printf " E_pred \n" 							                    
-		| TmIsZero (TmZero) -> Format.printf " E_iszerozero \n" 								
-		| TmIsZero (TmSucc(nv1)) when (isnumericval nv1) -> Format.printf " E_iszerosucc \n"  	
-		| TmIsZero (t1) -> Format.printf " E_iszero \n"
+		| TmIf (TmTrue,t2,t3) -> Format.printf " E_iftrue \n"; t2                                   
+		| TmIf (TmFalse,t2,t3) -> Format.printf " E_iffalse \n"; t3						
+		| TmIf (t1,t2,t3) -> Format.printf " E_if \n"; let t1' = printEvalStep t1 in TmIf(t1', t2, t3)										
+		| TmSucc (t1) ->  Format.printf " E_succ \n"; let t1' = printEvalStep t1 in TmSucc (t1')                       							
+		| TmPred (TmZero) -> Format.printf " E_predzero \n "; TmZero 								    
+		| TmPred (TmSucc(nv1)) when (isnumericval nv1) ->	Format.printf " E_predsucc \n"; nv1		
+		| TmPred (t1) -> Format.printf " E_pred \n"; let t1' = printEvalStep t1 in TmPred(t1')							                    
+		| TmIsZero (TmZero) -> Format.printf " E_iszerozero \n"; TmTrue						
+		| TmIsZero (TmSucc(nv1)) when (isnumericval nv1) -> Format.printf " E_iszerosucc \n"; TmFalse  	
+		| TmIsZero (t1) -> Format.printf " E_iszero \n"; let t1' = printEvalStep t1 in TmIsZero(t1')	
 		| _ -> Format.printf ""		
          )  
 
@@ -74,7 +75,7 @@ module Term =
 	
 	(* Printed multi-step evaluation *)
 	let rec printedEval t =
-		try let t' = printEvalStep t; eval1 t in printedEval t'			(* printedEval doesn't print when eval1 calls itself. Can do better*)
+		try let t' = printEvalStep t in printedEval t'			(* printedEval doesn't print when eval1 calls itself. Can do better*)
 		with NoRuleApplies "" -> t
 		
 		
@@ -122,7 +123,7 @@ module Term =
 					)
 		| TmSucc(t1) -> let nv1 = printedBigstep t1 in												(*B_Succ*)
 					if isnumericval nv1 
-					then Format.printf " B_Succ \n"; TmSucc(nv1)
+					then (Format.printf " B_Succ \n"; TmSucc(nv1))
 					else raise (NoRuleApplies "Invalid argument. TmSucc accepts only numeric values as argument.")
 		| TmPred(t1) -> let t1' = printedBigstep t1 in 
 					(match t1' with 
