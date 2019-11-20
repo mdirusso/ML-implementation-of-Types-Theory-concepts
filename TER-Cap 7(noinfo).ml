@@ -9,7 +9,7 @@ module Term =
 		
 		type term =
 			| TmVar of int * int       		(* int1 : de Brujin index     int2: actual size of the context *)
-			| TmAbs of string * term		(* string: name of the variable in the ordinary representation *)
+			| TmAbs of string * term			(* string: name of the variable in the ordinary representation *)
 			| TmApp of term * term			
 			
 			
@@ -17,7 +17,7 @@ module Term =
 		
 		type context = (string * binding) list		(* context represented as a list of strings and associated bindings *)
 		
-		
+		exception NoRuleApplies
 
 	(* Function that returns the nameless representation of the term *)		
 	(*let rec removenames ctx t =
@@ -55,7 +55,7 @@ module Term =
 	(* adds a name to the context, creating new name if already used *)
 	let rec pickfreshname ctx x =
 		if alreadyused ctx x 
-		then pickfreshname ctx (x ^ "'") 			(* add an apex to the name if it was already used *)
+		then pickfreshname ctx (x ^ "'") 				(* add an apex to the name if it was already used *)
 		else ((x, NameBind)::ctx), x				    (* if the name is not already used, add it to ctx *)
 		
 		
@@ -72,11 +72,11 @@ module Term =
 	(* Given a context and a term, prints the term giving new names if they already exist in context *)
 	let rec printtm ctx t = 
 		match t with
-		| TmAbs(x,t1) -> let (ctx',x') = pickfreshname ctx x in				(* A new name is chosen for x if it already exists *)
+		| TmAbs(x,t1) -> let (ctx',x') = pickfreshname ctx x in						(* A new name is chosen for x if it already exists *)
 						Format.printf "(lambda "; Format.printf "%s" (x'); Format.printf ". "; printtm ctx' t1; Format.printf ")"
 		| TmApp(t1, t2) -> Format.printf "("; printtm ctx t1; Format.printf " "; printtm ctx t2; Format.printf ")"
 		| TmVar(x,n) -> if ctxlength ctx = n then									(* Consistency check. If it doesn't pass a shift is missing somewhere *)
-						Format.printf "%s" (index2name ctx x)					(* return the name corresponding to the index in ctx *)
+						Format.printf "%s" (index2name ctx x)						(* return the name corresponding to the index in ctx *)
 						else
 						Format.printf "[bad index]"
 						
@@ -88,12 +88,12 @@ module Term =
 	let termShift d t =
 		let rec walk c t = 
 			match t with
-			| TmVar(x, n) -> if x >= c 											(* The index has to be shifted only if it is greater than the cutoff *)
-							then TmVar(fi, x + d, n + d)
-							else TmVar(fi, x, n + d)
+			| TmVar(x, n) -> if x >= c 						(* The index has to be shifted only if it is greater than the cutoff *)
+							then TmVar(x + d, n + d)
+							else TmVar(x, n + d)
 			| TmAbs(x, t1) -> TmAbs(x, walk (c + 1) t1)			(* Every time a bound is encountered, the cutoff increases by one and walk is called on the subterm *)
 			| TmApp(t1, t2) -> TmApp(walk c t1, walk c t2)		(* In applications the shifting is applied on both subterms *)
-		in walk 0 t																		(* the first call is walk on the original term with cutoff = 0 *)
+		in walk 0 t										(* the first call is walk on the original term with cutoff = 0 *)
 		
 	
 	(* Defines substitution operation. *)
@@ -101,9 +101,9 @@ module Term =
 	let termSubst j s t =  (* [j -> s]t *)
 		let rec walk c t = 
 			match t with
-			| TmVar(x, n) -> if x = j + c   									(* if x is exactly j plus the cutoff *)
-							then termShift c s      									(* all the j in t are substituted with s *)
-							else TmVar(x, n)										(* nothing happens *)
+			| TmVar(x, n) -> if x = j + c   					(* if x is exactly j plus the cutoff *)
+							then termShift c s      			(* all the j in t are substituted with s *)
+							else TmVar(x, n)				(* nothing happens *)
 			| TmAbs(x, t1) -> TmAbs(x, walk (c + 1) t1)			(* call the walk function increasing the cutoff *)
 			| TmApp(t1, t2) -> TmApp(walk c t1, walk c t2)		(* call the walk on the two subterms *)
 		in walk 0 t
@@ -111,30 +111,64 @@ module Term =
 	
 	let termSubstTop s t =
 		termShift (-1) (termSubst 0 (termShift 1 s) t)				(* the term being substituted for the bound variable is first shifted up by one, 
-																						then the substitution is made, and then the resulting term is shifted down because
-																						a bound variable has been used *)
-		
-	let rec isval ctx t = match t with
-		| TmAbs(_,_) -> true
+															then the substitution is made, and then the resulting term is shifted down because
+															a bound variable has been used *)
+	
+	
+	
+	
+	(* Note that, in the pure lambda-calculus, lambda-abstractions are the only
+	possible values, so if we reach a state where E-App1 has succeeded in reducing
+	t 1 to a value, then this value must be a lambda-abstraction. This observation 
+	fails, of course, when we add other constructs such as primitive booleans to
+	the language, since these introduce forms of values other than abstractions.*)
+	let rec isval ctx t = 
+		match t with
+		| TmAbs(_, _) -> true
 		| _ -> false
 
+
 	(*single step evaluation*)	
-	let rec eval1 ctx t = match t with
-		| TmApp(TmAbs(x,t12),v2) when isval ctx v2 ->  termSubstTop v2 t12             (*E_APPABS*)
-		| TmApp(v1,t2) when isval ctx v1 -> let t2’ = eval1 ctx t2 in TmApp(v1, t2')     (*E_APP2*)
-		| TmApp(t1,t2) -> let t1' = eval1 ctx t1 in TmApp(t1', t2)                                  (*E_APP1*)
-		| _  ->  raise NoRuleApplies
+	let rec eval1 ctx t = 
+		match t with
+		| TmApp(TmAbs(x, t12), v2) when isval ctx v2 -> termSubstTop v2 t12             				(*E_APPABS*)
+		| TmApp(v1, t2) when isval ctx v1 -> let t2' = eval1 ctx t2 in TmApp(v1, t2')     			(*E_APP2*)
+		| TmApp(t1, t2) -> let t1' = eval1 ctx t1 in TmApp(t1', t2)                                 	(*E_APP1*)
+		| _ -> raise NoRuleApplies
+		
+		
 		
 	(*single step evaluation + printing*)	
-	let rec printed_eval1 ctx t = match t with
-		| TmApp(TmAbs(x,t12),v2) when isval ctx v2 ->  Format.printf "E_APPABS \n"; termSubstTop v2 t12            			 (*E_APPABS*)
-		| TmApp(v1,t2) when isval ctx v1 ->Format.printf "E_APP2 \n"; let t2' = printed_eval1 ctx t2 in TmApp(v1, t2')     	 (*E_APP2*)
-		| TmApp(t1,t2) -> Format.printf "E_APP1 \n" ; let t1' = printed_eval1 ctx t1 in TmApp(t1', t2)                                 	 (*E_APP1*)
+	let rec printed_eval1 ctx t = 
+		match t with
+		| TmApp(TmAbs(x, t12), v2) when isval ctx v2 -> Format.printf "E_APPABS \n"; termSubstTop v2 t12            			 (*E_APPABS*)
+		| TmApp(v1, t2) when isval ctx v1 -> Format.printf "E_APP2 \n"; let t2' = printed_eval1 ctx t2 in TmApp(v1, t2')     	 (*E_APP2*)
+		| TmApp(t1, t2) -> Format.printf "E_APP1 \n" ; let t1' = printed_eval1 ctx t1 in TmApp(t1', t2)                           (*E_APP1*)
 		| _  ->  raise NoRuleApplies
+		
+
 		
 	(*multistep evaluation*)	
 	let rec eval ctx t =
 		try let t' = eval1 ctx t in eval ctx t'
-    with NoRuleApplies -> t
+	with NoRuleApplies -> t
+	
+	
+	
+	(* big-step evaluation *)
+	let rec bigstep ctx t =
+		match t with	
+		| TmAbs(x, t) -> TmAbs(x, t)
+		| TmApp(t1, t2) -> let t1' = bigstep ctx t1 in
+						(match t1' with
+						| TmAbs(x, t12) -> let v2 = bigstep ctx t2 in
+										let t' = termSubstTop v2 t12 in
+										t'
+						| _ -> raise NoRuleApplies
+						
+						)
+		| _ -> raise NoRuleApplies
+	
+	
 end;;
 
