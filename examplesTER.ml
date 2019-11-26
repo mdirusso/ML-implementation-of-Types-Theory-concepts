@@ -39,22 +39,25 @@ multi_vs_Bigstep tNested;;
 # use "TER-Cap 7(noinfo).ml";;
 open Term;;
 
+
 let ctx = ("t", NameBind):: ("f", NameBind):: ("l", NameBind):: ("m", NameBind):: ("n", NameBind):: [];;
 let ctx = [];;
 
 let tru = TmAbs("t", TmAbs("f", TmVar(1, 2)));;
-let c0 = TmAbs("s", TmAbs("z", TmVar(1, 2)));;
+let fls = TmAbs("t", TmAbs("f", TmVar(0, 2)));;
+let c0 = TmAbs("s", TmAbs("z", TmVar(0, 2)));;
 let c1 = TmAbs("s", TmAbs("z", TmApp(TmVar(1, 2), TmVar(0, 2))));;
 
 (*λs. λz. z;
 c1 = λs. λz. s z;*)
 
 (* test = λl. λm. λn. l m n;; *)
-let test = TmAbs("l", TmAbs("m", TmAbs("n", TmApp(TmApp(TmVar(0, 1), TmVar(1, 1)), TmVar(2, 1)))));;
+let test = TmAbs("l", TmAbs("m", TmAbs("n", TmApp(TmApp(TmVar(2, 3), TmVar(1, 3)), TmVar(0, 3)))));;
 let t = TmApp(test, tru);;
-let test1 = TmApp(TmAbs("l", TmAbs("m", TmAbs("n", TmVar(0, 1)))), TmApp(TmVar(1, 1), TmVar(2, 1)));;
-let t1 = TmApp(test1, tru);;
+let tf = TmApp(test, fls);;
 let t11 = TmApp(TmApp(t, c0), c1);;
+let t22 = TmApp(TmApp(tf, c0), c1);;
+
 let ex0 = TmApp(
 			TmAbs("u", TmApp(TmVar(0, 1), TmVar(0, 1))),
 			TmApp(

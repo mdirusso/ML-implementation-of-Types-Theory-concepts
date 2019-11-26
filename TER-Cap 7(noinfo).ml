@@ -42,6 +42,7 @@ module Term =
 		
 		
 		
+		
 	(* Returns true if a name is already in the context, false otw *)
 	let rec alreadyused ctx x =
 		match ctx with
@@ -96,7 +97,7 @@ module Term =
 			| TmApp(t1, t2) -> TmApp(walk c t1, walk c t2)		(* In applications the shifting is applied on both subterms *)
 							in walk 0 t					(* the first call is walk on the original term with cutoff = 0 *)
 		
-	
+
 	(* Defines substitution operation. *)
 	(* 6.2.4 pag 80 *)
 	let termSubst j s t =  (* [j -> s]t *)
@@ -144,7 +145,7 @@ module Term =
 		match t with
 		| TmApp(TmAbs(x, t12), v2) when isval ctx v2 -> Format.printf "E_APPABS \n"; termSubstTop v2 t12            			 (*E_APPABS*)
 		| TmApp(v1, t2) when isval ctx v1 -> Format.printf "E_APP2 \n"; let t2' = printed_eval1 ctx t2 in TmApp(v1, t2')     	 (*E_APP2*)
-		| TmApp(t1, t2) -> Format.printf "E_APP1 \n" ; let t1' = printed_eval1 ctx t1 in TmApp(t1', t2)                          (*E_APP1*)
+		| TmApp(t1, t2) -> Format.printf "E_APP1 \n"; printtm ctx t1; let t1' = printed_eval1 ctx t1 in TmApp(t1', t2)                          (*E_APP1*)
 		| _  ->  raise NoRuleApplies
 		
 
@@ -168,12 +169,35 @@ module Term =
 		| TmApp(t1, t2) -> let t1' = bigstep ctx t1 in
 						(match t1' with
 						| TmAbs(x, t12) -> let v2 = bigstep ctx t2 in
-										let t' = termSubstTop v2 t12 in
+										let t' = bigstep ctx (termSubstTop v2 t12) in
 										t'
 						| _ -> raise NoRuleApplies
 						
 						)
 		| _ -> raise NoRuleApplies
+		
+		
+	let rec printed_bigstep ctx t =
+		match t with	
+		| TmAbs(x, t) -> Format.printf "B-ABS\n"; TmAbs(x, t)
+		| TmApp(t1, t2) -> let t1' = printed_bigstep ctx t1 in
+						(match t1' with
+						| TmAbs(x, t12) -> Format.printf "B-APPABS\n"; let v2 = printed_bigstep ctx t2 in
+										let t' = printed_bigstep ctx (termSubstTop v2 t12) in
+										t'
+						| _ -> raise NoRuleApplies
+						
+						)
+		| _ -> raise NoRuleApplies
+	
+	
+	
+	
+	let tru = TmAbs("t", TmAbs("f", TmVar(1, 2)))
+	let fls = TmAbs("t", TmAbs("f", TmVar(0, 2)))
+	let orr = TmAbs("b", TmAbs("c", TmApp(TmApp(TmVar(1, 2), (termShift 2 tru)), TmVar(0, 2))))
+	let andd = TmAbs("b", TmAbs("c", TmApp(TmApp(TmVar(1, 2), TmVar(0, 2)), (termShift 2 fls))))
+	let nott = TmAbs("a", TmApp(TmApp(TmVar(0, 1), (termShift 1 fls)), (termShift 1 tru)))
 	
 	
 end;;
