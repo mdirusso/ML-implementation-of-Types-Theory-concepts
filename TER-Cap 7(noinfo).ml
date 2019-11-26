@@ -78,7 +78,8 @@ module Term =
 		| TmVar(x,n) -> if ctxlength ctx = n then									(* Consistency check. If it doesn't pass a shift is missing somewhere *)
 						Format.printf "%s" (index2name ctx x)						(* return the name corresponding to the index in ctx *)
 						else
-						Format.printf "[bad index]"
+						let ctxl = ctxlength ctx in 
+						Format.printf "[bad index, n is %d and length is %d]" (n) (ctxl)
 						
 	
 	
@@ -93,7 +94,7 @@ module Term =
 							else TmVar(x, n + d)
 			| TmAbs(x, t1) -> TmAbs(x, walk (c + 1) t1)			(* Every time a bound is encountered, the cutoff increases by one and walk is called on the subterm *)
 			| TmApp(t1, t2) -> TmApp(walk c t1, walk c t2)		(* In applications the shifting is applied on both subterms *)
-		in walk 0 t										(* the first call is walk on the original term with cutoff = 0 *)
+							in walk 0 t					(* the first call is walk on the original term with cutoff = 0 *)
 		
 	
 	(* Defines substitution operation. *)
@@ -131,7 +132,7 @@ module Term =
 	(*single step evaluation*)	
 	let rec eval1 ctx t = 
 		match t with
-		| TmApp(TmAbs(x, t12), v2) when isval ctx v2 -> termSubstTop v2 t12             				(*E_APPABS*)
+		| TmApp(TmAbs(x, t12), v2) when isval ctx v2 -> termSubstTop v2 t12             			(*E_APPABS*)
 		| TmApp(v1, t2) when isval ctx v1 -> let t2' = eval1 ctx t2 in TmApp(v1, t2')     			(*E_APP2*)
 		| TmApp(t1, t2) -> let t1' = eval1 ctx t1 in TmApp(t1', t2)                                 	(*E_APP1*)
 		| _ -> raise NoRuleApplies
@@ -143,7 +144,7 @@ module Term =
 		match t with
 		| TmApp(TmAbs(x, t12), v2) when isval ctx v2 -> Format.printf "E_APPABS \n"; termSubstTop v2 t12            			 (*E_APPABS*)
 		| TmApp(v1, t2) when isval ctx v1 -> Format.printf "E_APP2 \n"; let t2' = printed_eval1 ctx t2 in TmApp(v1, t2')     	 (*E_APP2*)
-		| TmApp(t1, t2) -> Format.printf "E_APP1 \n" ; let t1' = printed_eval1 ctx t1 in TmApp(t1', t2)                           (*E_APP1*)
+		| TmApp(t1, t2) -> Format.printf "E_APP1 \n" ; let t1' = printed_eval1 ctx t1 in TmApp(t1', t2)                          (*E_APP1*)
 		| _  ->  raise NoRuleApplies
 		
 
@@ -151,6 +152,11 @@ module Term =
 	(*multistep evaluation*)	
 	let rec eval ctx t =
 		try let t' = eval1 ctx t in eval ctx t'
+	with NoRuleApplies -> t
+	
+	
+	let rec printed_eval ctx t =
+		try let t' = printed_eval1 ctx t in printed_eval ctx t'
 	with NoRuleApplies -> t
 	
 	
