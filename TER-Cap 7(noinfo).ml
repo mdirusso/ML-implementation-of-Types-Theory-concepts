@@ -201,6 +201,8 @@ module Term =
 						
 						)
 		| _ -> raise NoRuleApplies
+
+
 		
 		
 	let multi_vs_Bigstep ctx t = 
@@ -213,6 +215,8 @@ module Term =
 		Format.printf "*** THE MULTI STEP EVALUATION IS: \n\n";
 		let tMulti = printed_eval ctx t in 
 		Format.printf "\nThe result of the Multi-step evaluation is: %s\n\n" (to_string ctx tMulti)
+	
+	
 	
 	
 	(* Church booleans *)
