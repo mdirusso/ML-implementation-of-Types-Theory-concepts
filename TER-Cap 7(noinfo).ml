@@ -82,6 +82,18 @@ module Term =
 						let ctxl = ctxlength ctx in 
 						Format.printf "[bad index, n is %d and length is %d]" (n) (ctxl)
 						
+						
+	let rec to_string ctx t = 
+		match t with
+		| TmAbs(x,t1) -> let (ctx',x') = pickfreshname ctx x in						(* A new name is chosen for x if it already exists *)
+					"(lambda " ^ x' ^ ". " ^ (to_string ctx' t1) ^ ")"
+		| TmApp(t1, t2) -> "(" ^ to_string ctx t1 ^ " " ^ to_string ctx t2 ^ ")"
+		| TmVar(x,n) -> if ctxlength ctx = n then									(* Consistency check. If it doesn't pass a shift is missing somewhere *)
+						(index2name ctx x)					     				(* return the name corresponding to the index in ctx *)
+						else
+						let ctxl = ctxlength ctx in 
+						"[bad index, n is " ^ (string_of_int n) ^ " and length is " ^ (string_of_int ctxl) ^ "]"
+						
 	
 	
 	
@@ -145,7 +157,7 @@ module Term =
 		match t with
 		| TmApp(TmAbs(x, t12), v2) when isval ctx v2 -> Format.printf "E_APPABS \n"; termSubstTop v2 t12            			 (*E_APPABS*)
 		| TmApp(v1, t2) when isval ctx v1 -> Format.printf "E_APP2 \n"; let t2' = printed_eval1 ctx t2 in TmApp(v1, t2')     	 (*E_APP2*)
-		| TmApp(t1, t2) -> Format.printf "E_APP1 \n"; printtm ctx t1; let t1' = printed_eval1 ctx t1 in TmApp(t1', t2)                          (*E_APP1*)
+		| TmApp(t1, t2) -> Format.printf "E_APP1 \n"; let t1' = printed_eval1 ctx t1 in TmApp(t1', t2)                          (*E_APP1*)
 		| _  ->  raise NoRuleApplies
 		
 
@@ -189,15 +201,31 @@ module Term =
 						
 						)
 		| _ -> raise NoRuleApplies
+		
+		
+	let multi_vs_Bigstep ctx t = 
+		Format.printf "----------------------------------------------\n";
+		Format.printf "THE INSERTED TERM IS:\n%S\n" (to_string ctx t); 
+		Format.printf "---------------------------------------------\n\n";
+		Format.printf "*** THE BIG STEP EVALUATION IS: \n\n";
+		let tBig = printed_bigstep ctx t in
+		Format.printf "\nThe result of the Big-step evaluation is: %s\n\n" (to_string ctx tBig);
+		Format.printf "*** THE MULTI STEP EVALUATION IS: \n\n";
+		let tMulti = printed_eval ctx t in 
+		Format.printf "\nThe result of the Multi-step evaluation is: %s\n\n" (to_string ctx tMulti)
 	
 	
-	
-	
+	(* Church booleans *)
 	let tru = TmAbs("t", TmAbs("f", TmVar(1, 2)))
 	let fls = TmAbs("t", TmAbs("f", TmVar(0, 2)))
+	
 	let orr = TmAbs("b", TmAbs("c", TmApp(TmApp(TmVar(1, 2), (termShift 2 tru)), TmVar(0, 2))))
 	let andd = TmAbs("b", TmAbs("c", TmApp(TmApp(TmVar(1, 2), TmVar(0, 2)), (termShift 2 fls))))
 	let nott = TmAbs("a", TmApp(TmApp(TmVar(0, 1), (termShift 1 fls)), (termShift 1 tru)))
+	
+	
+	let c0 = TmAbs("s", TmAbs("z", TmVar(0, 2)))
+	let c1 = TmAbs("s", TmAbs("z", TmApp(TmVar(1, 2), TmVar(0, 2))))
 	
 	
 end;;
