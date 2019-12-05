@@ -74,7 +74,7 @@ module Term =
 	let rec printtm ctx t = 
 		match t with
 		| TmAbs(x,t1) -> let (ctx',x') = pickfreshname ctx x in						(* A new name is chosen for x if it already exists *)
-						Format.printf "(lambda "; Format.printf "%s" (x'); Format.printf ". "; printtm ctx' t1; Format.printf ")"
+						Format.printf "(λ "; Format.printf "%s" (x'); Format.printf ". "; printtm ctx' t1; Format.printf ")"
 		| TmApp(t1, t2) -> Format.printf "("; printtm ctx t1; Format.printf " "; printtm ctx t2; Format.printf ")"
 		| TmVar(x,n) -> if ctxlength ctx = n then									(* Consistency check. If it doesn't pass a shift is missing somewhere *)
 						Format.printf "%s" (index2name ctx x)						(* return the name corresponding to the index in ctx *)
@@ -86,7 +86,7 @@ module Term =
 	let rec to_string ctx t = 
 		match t with
 		| TmAbs(x,t1) -> let (ctx',x') = pickfreshname ctx x in						(* A new name is chosen for x if it already exists *)
-					"(lambda " ^ x' ^ ". " ^ (to_string ctx' t1) ^ ")"
+					"(λ " ^ x' ^ ". " ^ (to_string ctx' t1) ^ ")"
 		| TmApp(t1, t2) -> "(" ^ to_string ctx t1 ^ " " ^ to_string ctx t2 ^ ")"
 		| TmVar(x,n) -> if ctxlength ctx = n then									(* Consistency check. If it doesn't pass a shift is missing somewhere *)
 						(index2name ctx x)					     				(* return the name corresponding to the index in ctx *)
@@ -102,12 +102,12 @@ module Term =
 	let termShift d t =
 		let rec walk c t = 
 			match t with
-			| TmVar(x, n) -> if x >= c 						(* The index has to be shifted only if it is greater than the cutoff *)
+			| TmVar(x, n) -> if x >= c 							(* The index has to be shifted only if it is greater than the cutoff *)
 							then TmVar(x + d, n + d)
 							else TmVar(x, n + d)
 			| TmAbs(x, t1) -> TmAbs(x, walk (c + 1) t1)			(* Every time a bound is encountered, the cutoff increases by one and walk is called on the subterm *)
 			| TmApp(t1, t2) -> TmApp(walk c t1, walk c t2)		(* In applications the shifting is applied on both subterms *)
-							in walk 0 t					(* the first call is walk on the original term with cutoff = 0 *)
+							in walk 0 t							(* the first call is walk on the original term with cutoff = 0 *)
 		
 
 	(* Defines substitution operation. *)
@@ -117,7 +117,7 @@ module Term =
 			match t with
 			| TmVar(x, n) -> if x = j + c   					(* if x is exactly j plus the cutoff *)
 							then termShift c s      			(* all the j in t are substituted with s *)
-							else TmVar(x, n)				(* nothing happens *)
+							else TmVar(x, n)					(* nothing happens *)
 			| TmAbs(x, t1) -> TmAbs(x, walk (c + 1) t1)			(* call the walk function increasing the cutoff *)
 			| TmApp(t1, t2) -> TmApp(walk c t1, walk c t2)		(* call the walk on the two subterms *)
 		in walk 0 t
@@ -207,7 +207,7 @@ module Term =
 		
 	let multi_vs_Bigstep ctx t = 
 		Format.printf "----------------------------------------------\n";
-		Format.printf "THE INSERTED TERM IS:\n%S\n" (to_string ctx t); 
+		Format.printf "THE INSERTED TERM IS:\n%s\n" (to_string ctx t); 
 		Format.printf "---------------------------------------------\n\n";
 		Format.printf "*** THE BIG STEP EVALUATION IS: \n\n";
 		let tBig = printed_bigstep ctx t in

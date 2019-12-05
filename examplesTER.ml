@@ -87,3 +87,53 @@ let a = 4;;
 let b = a = a + b;;
 
 
+
+
+
+
+
+# use "Ter-Cap 10.ml";;
+open Term;;
+let ctx = [];;
+
+
+let mix = TmApp(TmAbs("x", TyNat, TmVar(0, 1)), TmIf(TmTrue, TmZero, TmSucc(TmZero)));;
+printed_typeof ctx mix;;
+
+
+let iff = TmAbs("l", TmAbs("m", TmAbs("n", TmApp(TmApp(TmVar(2, 3), TmVar(1, 3)), TmVar(0, 3)))));;
+let t = TmApp(iff, tru);;
+let iftrue = TmApp(TmApp(t, c0), c1);;	
+
+
+let tIfTrue = TmIf (TmTrue, TmIsZero (TmSucc (TmZero)), TmTrue);;
+printed_typeof ctx tIfTrue;;
+
+let tWrong1 = TmIf (TmZero, TmIsZero (TmSucc (TmZero)), TmTrue);;
+printed_typeof ctx tWrong1;;
+
+
+
+(* iff = λl. λm. λn. l m n    *)
+let iff = TmAbs("l", TyNat, TmAbs("m", TyBool, TmAbs("n", TyBool, TmApp(TmApp(TmVar(2, 3), TmVar(1, 3)), TmVar(0, 3)))));;
+let t = TmApp(iff, tru);;
+let iftrue = TmApp(TmApp(t, c0), c1);;			(* iff tru c0 c1 *)
+let tf = TmApp(iff, fls);;
+let iffalse = TmApp(TmApp(tf, c0), c1);;		(* iff fls c0 c1 *)
+
+let ortf = TmApp(TmApp(orr, tru), fls);;		(* orr tru fls *)
+let orff = TmApp(TmApp(orr, fls), fls);;		(* orr fls fls *)
+
+let andtf = TmApp(TmApp(andd, tru), fls);;		(* andd tru fls *)
+let andtt = TmApp(TmApp(andd, tru), tru);;		(* andd tru tru *)
+
+multi_vs_Bigstep ctx iftrue;;
+multi_vs_Bigstep ctx iffalse;;
+multi_vs_Bigstep ctx ortf;;
+multi_vs_Bigstep ctx orff;;
+multi_vs_Bigstep ctx andtf;;
+multi_vs_Bigstep ctx andtt;;
+
+
+
+
