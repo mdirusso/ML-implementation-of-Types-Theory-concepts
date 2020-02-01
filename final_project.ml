@@ -18,10 +18,6 @@ module Term =
 			| VarBind of ty
 			
 			
-		(*type listnat = 
-			| Nil
-			| Cons of term * listnat*)
-			
 			
 	   	type term =
 			| TmTrue
